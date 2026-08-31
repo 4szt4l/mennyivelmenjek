@@ -1,0 +1,448 @@
+<html lang="hu">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mennyivel menjek? — Optimális autópálya sebesség kalkulátor</title>
+    <meta name="description" content="Optimális sebesség kalkulátor" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./style.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20d%3D%22M10%2010h8v8h-8z%22%20fill%3D%22%23fff%22%3E%3C%2Fpath%3E%3C%2Fsvg%3E"
+    />
+  </head>
+  <body>
+    <header id="header">
+      <h1 data-i18n="title">Mennyivel menjek? — Optimális autópálya sebesség kalkulátor</h1>
+      <div class="header-controls">
+        <button id="theme-toggle" aria-label="Téma váltás">
+          <svg
+            id="theme-icon-light"
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="5" />
+            <line x1="12" y1="1" x2="12" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="23" />
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+            <line x1="1" y1="12" x2="3" y2="12" />
+            <line x1="21" y1="12" x2="23" y2="12" />
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+          </svg>
+          <svg
+            id="theme-icon-dark"
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="display: none"
+          >
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+          </svg>
+        </button>
+      </div>
+    </header>
+    <main class="layout">
+      <div class="col-inputs">
+        <section id="fuel-section" class="card">
+          <h2 class="card-title" data-i18n="fuel">Üzemanyag</h2>
+          <div
+            class="seg"
+            id="fuel-type"
+            role="group"
+            aria-label="Üzemanyag típus"
+          >
+            <button
+              type="button"
+              data-value="gasoline"
+              class="seg-btn"
+              data-i18n="gasoline"
+            >
+              Benzin 95
+            </button>
+            <button
+              type="button"
+              data-value="diesel"
+              class="seg-btn"
+              data-i18n="diesel"
+            >
+              Gázolaj
+            </button>
+            <button
+              type="button"
+              data-value="manual"
+              class="seg-btn"
+              data-i18n="manual"
+            >
+              Egyéni
+            </button>
+          </div>
+          <div class="field-row">
+            <label for="fuel-price" class="sr-only" data-i18n="fuelPriceLabel"
+              >Üzemanyagár</label
+            >
+            <input
+              type="text"
+              id="fuel-price"
+              inputmode="decimal"
+              aria-label="Üzemanyagár (Ft/l)"
+            />
+            <span class="unit" id="fuel-price-unit">Ft/l</span>
+          </div>
+          <p id="fuel-price-note" class="hint"></p>
+        </section>
+
+        <section id="car-section" class="card">
+          <div class="card-header">
+            <h2 class="card-title" data-i18n="car">Autó</h2>
+            <div class="tab-switch" role="tablist" aria-label="Autó nézet">
+              <button
+                type="button"
+                id="car-tab-simple"
+                class="tab-btn active"
+                role="tab"
+                aria-selected="true"
+                aria-controls="car-simple"
+                data-i18n="simple"
+              >
+                Egyszerű
+              </button>
+              <button
+                type="button"
+                id="car-tab-advanced"
+                class="tab-btn"
+                role="tab"
+                aria-selected="false"
+                aria-controls="car-advanced"
+                data-i18n="advanced"
+              >
+                Haladó
+              </button>
+            </div>
+          </div>
+
+          <div id="car-shared">
+            <div class="field-row">
+              <label for="consumption" data-i18n="consumption"
+                >Fogyasztás</label
+              >
+              <input
+                type="text"
+                id="consumption"
+                inputmode="decimal"
+                placeholder="6,5"
+                data-slider-label=""
+              />
+              <span class="unit" id="consumption-unit-label">l/100 km</span>
+              <button
+                type="button"
+                class="info-btn"
+                data-info="consumptionHint"
+                aria-label="Info"
+              >
+                ⓘ
+              </button>
+            </div>
+            <div class="field-row">
+              <label for="consumption-speed" data-i18n="measuredSpeed"
+                >Ekkora sebességnél:</label
+              >
+              <input
+                type="text"
+                id="consumption-speed"
+                inputmode="decimal"
+                placeholder="130"
+                class="narrow"
+                data-slider-label=""
+              />
+              <span class="unit" id="consumption-speed-unit">km/h</span>
+            </div>
+          </div>
+
+          <div id="car-simple" role="tabpanel">
+            <div class="seg-row">
+              <div
+                class="seg"
+                id="vehicle-type"
+                role="group"
+                aria-label="Autó típusa"
+              >
+                <button
+                  type="button"
+                  data-value="sedan"
+                  class="seg-btn"
+                  data-i18n="sedan"
+                >
+                  Szedán
+                </button>
+                <button
+                  type="button"
+                  data-value="hatchback"
+                  class="seg-btn"
+                  data-i18n="hatchback"
+                >
+                  Ferdehátú
+                </button>
+                <button type="button" data-value="suv" class="seg-btn">
+                  SUV
+                </button>
+              </div>
+              <button
+                type="button"
+                class="info-btn"
+                data-info="cwHint"
+                aria-label="Info"
+              >
+                ⓘ
+              </button>
+            </div>
+          </div>
+
+          <div id="car-advanced" role="tabpanel" hidden>
+            <div
+              class="seg"
+              id="car-advanced-mode"
+              role="group"
+              aria-label="Haladó mód"
+            >
+              <button
+                type="button"
+                data-value="cw"
+                class="seg-btn active"
+                data-i18n="cwValue"
+              >
+                cw érték
+              </button>
+              <button
+                type="button"
+                data-value="measurements"
+                class="seg-btn"
+                data-i18n="measurements"
+              >
+                Mérések
+              </button>
+            </div>
+            <div id="cw-panel">
+              <div class="field-row">
+                <label for="cw" data-i18n="cwLabel"
+                  >Légellenállási együttható (cw)</label
+                >
+                <input type="text" id="cw" inputmode="decimal" data-slider-label="" />
+                <button
+                  type="button"
+                  class="info-btn"
+                  data-info="cwOverride"
+                  aria-label="Info"
+                >
+                  ⓘ
+                </button>
+              </div>
+            </div>
+            <div id="measurements-panel" hidden>
+              <p class="hint" data-i18n="measurementsHint">
+                Adj meg valós méréseket különböző sebességeknél és illesztünk rá
+                egy görbét. Ha van mérés, a cw-t nem használjuk.
+              </p>
+              <div id="measurements"></div>
+              <button
+                type="button"
+                id="add-measurement"
+                class="ghost-btn"
+                data-i18n="addMeasurement"
+              >
+                + Mérés hozzáadása
+              </button>
+            </div>
+            <div id="consumption-chart-wrapper">
+              <h3 class="card-subtitle" data-i18n="consumptionChart">
+                Becsült fogyasztás
+              </h3>
+              <canvas
+                id="consumption-chart"
+                role="img"
+                aria-label="Fogyasztás diagram"
+              ></canvas>
+            </div>
+          </div>
+        </section>
+
+        <section id="time-section" class="card">
+          <div class="card-header">
+            <h2 class="card-title" data-i18n="time">Idő</h2>
+            <div class="tab-switch" role="tablist" aria-label="Idő nézet">
+              <button
+                type="button"
+                id="time-tab-simple"
+                class="tab-btn active"
+                role="tab"
+                aria-selected="true"
+                aria-controls="time-simple"
+                data-i18n="simple"
+              >
+                Egyszerű
+              </button>
+              <button
+                type="button"
+                id="time-tab-advanced"
+                class="tab-btn"
+                role="tab"
+                aria-selected="false"
+                aria-controls="time-advanced"
+                data-i18n="advanced"
+              >
+                Haladó
+              </button>
+            </div>
+          </div>
+
+          <div id="time-shared">
+            <div class="field-row">
+              <label for="salary" class="sr-only" data-i18n="salary"
+                >Havi nettó fizetés</label
+              >
+              <input
+                type="text"
+                id="salary"
+                inputmode="decimal"
+                placeholder="436 200"
+              />
+              <span class="unit" id="salary-unit">Ft/hó nettó</span>
+            </div>
+            <div id="passengers"></div>
+          </div>
+
+          <div id="time-simple" role="tabpanel"></div>
+
+          <div id="time-advanced" role="tabpanel" hidden>
+            <button
+              type="button"
+              id="add-passenger"
+              class="ghost-btn"
+              data-i18n="addPassenger"
+            >
+              + Utas hozzáadása
+            </button>
+            <div class="field-row">
+              <label for="work-hours" data-i18n="workHours"
+                >Munkaórák havonta</label
+              >
+              <input type="text" id="work-hours" inputmode="decimal" />
+            </div>
+            <div class="field-row">
+              <label for="free-time" data-i18n="freeTime"
+                >Szabadidő értéke (szorzó)</label
+              >
+              <input type="text" id="free-time" inputmode="decimal" />
+              <button
+                type="button"
+                class="info-btn"
+                data-info="freeTimeHint"
+                aria-label="Info"
+              >
+                ⓘ
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <button type="button" id="reset" class="ghost-btn" data-i18n="reset">
+          Alapértelmezett értékek visszaállítása
+        </button>
+      </div>
+
+      <div class="col-outputs">
+        <section id="results" aria-live="polite" class="card">
+          <h2 data-i18n="optimalSpeed">Optimális sebesség</h2>
+          <p id="optimal-speed" class="big"></p>
+          <p id="theoretical-optimum" class="hint" hidden></p>
+          <p id="range-limit-note"></p>
+          <p id="legal-limit-note" class="warning-note"></p>
+          <p id="defaults-note" class="hint" hidden></p>
+        </section>
+        <section id="trip-section" class="card">
+          <div class="card-header">
+            <h2 class="card-subtitle" data-i18n="tripCalc">Út számítás</h2>
+            <div class="toggle-wrap">
+              <span id="trip-toggle-label" class="toggle-label">Ki</span>
+              <label class="toggle-switch" aria-label="Út számítás be/ki">
+                <input type="checkbox" id="trip-toggle" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+          <div id="trip-content" hidden>
+            <div class="field-row">
+              <label for="distance" class="sr-only" data-i18n="distance"
+                >Távolság (km)</label
+              >
+              <input type="text" id="distance" inputmode="decimal" />
+              <span class="unit">km</span>
+            </div>
+            <div id="trip-results">
+              <table class="trip-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th id="trip-optimal-header"></th>
+                    <th id="trip-ref-header"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td data-i18n="tripFuelCost">Üzemanyagköltség:</td>
+                    <td id="trip-cost"></td>
+                    <td id="trip-cost-130"></td>
+                  </tr>
+                  <tr>
+                    <td data-i18n="tripTime">Teljes útidő:</td>
+                    <td id="trip-time"></td>
+                    <td id="trip-time-130"></td>
+                  </tr>
+                </tbody>
+              </table>
+              <p id="trip-diff"></p>
+            </div>
+          </div>
+        </section>
+        <section id="chart-section" class="card">
+          <canvas id="chart" role="img" aria-label="Költség diagram"></canvas>
+          <p id="chart-fallback" data-i18n="chartFallback">
+            A diagram nem érhető el, de az eredmények érvényesek.
+          </p>
+        </section>
+      </div>
+    </main>
+    <footer>
+      <p data-i18n="disclaimer">
+        A modell egyszerűsített közelítés, tájékoztató jellegű.
+      </p>
+    </footer>
+    <script
+      src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"
+      defer
+    ></script>
+    <script type="module" src="./script.js" defer></script>
+  </body>
+</html>
