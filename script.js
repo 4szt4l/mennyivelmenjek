@@ -704,10 +704,10 @@ const I18N = {
     on: "Be",
     off: "Ki",
     invalidNumber: "Érvénytelen szám",
-    fuelFetchError: "Nem sikerült lekérni — add meg kézzel (Egyéni mód).",
     fuelFetchFallback:
       "Nem sikerült lekérni — az alapértelmezett árat használjuk.",
     fuelFetchFrom: "Frissítve:",
+    fuelFetchPending: "Árak lekérése folyamatban…",
     fuelSavings: "üzemanyag megtakarítás",
     fuelExtra: "üzemanyag többlet",
     timeSlower: "perc lassabb",
@@ -783,9 +783,9 @@ const I18N = {
     on: "On",
     off: "Off",
     invalidNumber: "Invalid number",
-    fuelFetchError: "Could not fetch — enter manually (Manual mode).",
     fuelFetchFallback: "Could not fetch — using the default price.",
     fuelFetchFrom: "Updated:",
+    fuelFetchPending: "Fetching current prices…",
     fuelSavings: "fuel savings",
     fuelExtra: "fuel extra",
     timeSlower: "min slower",
@@ -852,8 +852,9 @@ function loadFuelCache() {
 
 function fuelCacheIsStale(cache) {
   if (!cache?.fetchedAt) return true;
-  const age = Date.now() - new Date(cache.fetchedAt).getTime();
-  return age > FUEL_CACHE_TTL;
+  const fetchedAt = new Date(cache.fetchedAt).getTime();
+  if (!Number.isFinite(fetchedAt)) return true;
+  return Date.now() - fetchedAt > FUEL_CACHE_TTL;
 }
 
 function saveFuelCache(cache) {
@@ -864,25 +865,35 @@ function saveFuelCache(cache) {
   }
 }
 
+let fuelFetchInFlight = false;
+
 async function fetchFuelPrices() {
-  if (fuelPriceCache) return fuelPriceCache;
-  fetchFuelPrices.pending = fetchFuelPrices.pending || (async () => {
-    try {
-      const res = await fetch(FUEL_API, { signal: AbortSignal.timeout(10000) });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      const hu = json?.data?.HU;
-      if (!hu?.prices?.gasoline || !hu?.prices?.diesel)
-        throw new Error("Hungary data not found");
-      const gasoline = Math.round(hu.prices.gasoline);
-      const diesel = Math.round(hu.prices.diesel);
-      fuelPriceCache = { gasoline, diesel, fetchedAt: new Date().toISOString() };
-      saveFuelCache(fuelPriceCache);
-      return fuelPriceCache;
-    } catch {
-      throw new Error("Failed to fetch fuel prices");
-    }
-  })();
+  if (fuelPriceCache && !fuelCacheIsStale(fuelPriceCache)) {
+    return fuelPriceCache;
+  }
+  if (!fetchFuelPrices.pending) {
+    fuelFetchInFlight = true;
+    fetchFuelPrices.pending = (async () => {
+      try {
+        const res = await fetch(FUEL_API, { signal: AbortSignal.timeout(10000) });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        const hu = json?.data?.HU;
+        if (!hu?.prices?.gasoline || !hu?.prices?.diesel)
+          throw new Error("Hungary data not found");
+        const gasoline = Math.round(hu.prices.gasoline);
+        const diesel = Math.round(hu.prices.diesel);
+        fuelPriceCache = { gasoline, diesel, fetchedAt: new Date().toISOString() };
+        saveFuelCache(fuelPriceCache);
+        return fuelPriceCache;
+      } catch (e) {
+        fetchFuelPrices.pending = null; // allow retry on next trigger
+        throw e;
+      } finally {
+        fuelFetchInFlight = false;
+      }
+    })();
+  }
   return fetchFuelPrices.pending;
 }
 
@@ -944,12 +955,15 @@ function clearFieldError(id) {
 }
 
 function sliderAriaLabel(el) {
-  const override = el.getAttribute("data-slider-label");
-  if (override !== null) return override;
   const explicit = el.getAttribute("aria-label");
   if (explicit) return explicit;
   if (el.labels && el.labels[0]) return el.labels[0].textContent.trim();
   return "";
+}
+
+function sliderVisibleLabel(el) {
+  const override = el.getAttribute("data-slider-label");
+  return override !== null ? override : sliderAriaLabel(el);
 }
 
 function createSlider(id) {
@@ -964,7 +978,8 @@ function createSlider(id) {
   const label = document.createElement("span");
   label.className = "slider-label";
   label.id = `${id}-slider-label`;
-  label.textContent = sliderAriaLabel(el);
+  label.textContent = sliderVisibleLabel(el);
+  label.hidden = label.textContent === "";
   const value = document.createElement("span");
   value.className = "slider-value";
   value.id = `${id}-slider-value`;
@@ -972,7 +987,8 @@ function createSlider(id) {
   const slider = document.createElement("input");
   slider.type = "range";
   slider.id = `${id}-slider`;
-  slider.setAttribute("aria-label", sliderAriaLabel(el));
+  const aria = sliderAriaLabel(el);
+  if (aria) slider.setAttribute("aria-label", aria);
   const bounds = document.createElement("div");
   bounds.className = "slider-bounds";
   const min = document.createElement("span");
@@ -991,9 +1007,13 @@ function updateSliderLabels() {
   for (const id of Object.keys(SLIDER_CONFIG)) {
     const slider = document.getElementById(`${id}-slider`);
     const el = document.getElementById(id);
-    if (slider && el) slider.setAttribute("aria-label", sliderAriaLabel(el));
+    const aria = el ? sliderAriaLabel(el) : "";
+    if (slider && aria) slider.setAttribute("aria-label", aria);
     const label = document.getElementById(`${id}-slider-label`);
-    if (label && el) label.textContent = sliderAriaLabel(el);
+    if (label && el) {
+      label.textContent = sliderVisibleLabel(el);
+      label.hidden = label.textContent === "";
+    }
   }
 }
 
@@ -1119,6 +1139,8 @@ function updateFuelNote(state) {
     const d = new Date(state.fuelPriceUpdated);
     const locale = currentLang === "hu" ? "hu-HU" : "en-GB";
     note.textContent = `${t("fuelFetchFrom")} ${d.toLocaleDateString(locale)}`;
+  } else if (fuelFetchInFlight) {
+    note.textContent = t("fuelFetchPending");
   } else {
     note.textContent = t("fuelFetchFallback");
   }
@@ -1485,6 +1507,21 @@ function init() {
   updateThemeIcon(document.documentElement.dataset.theme);
 
   applyLanguage("hu");
+
+  fuelPriceCache = loadFuelCache();
+  const cachedPrice =
+    state.fuelType !== "manual" ? fuelPriceCache?.[state.fuelType] : undefined;
+  if (Number.isFinite(cachedPrice)) {
+    state = validate({
+      ...state,
+      fuelPrice: cachedPrice,
+      fuelPriceUpdated: fuelPriceCache.fetchedAt,
+    });
+  }
+  if (state.fuelType !== "manual" && fuelCacheIsStale(fuelPriceCache)) {
+    triggerFuelFetch();
+  }
+
   populateFields(state);
   recalculate(state);
 
@@ -1657,6 +1694,19 @@ function init() {
     });
   }
 
+  function triggerFuelFetch() {
+    fetchFuelPrices()
+      .then(() => {
+        if (state.fuelType !== "manual") handleFuelType(state.fuelType);
+      })
+      .catch(() => {
+        if (state.fuelType === "manual") return;
+        if (fuelPriceCache) return; // stale cache price already applied
+        // no cache: keep default price, show fallback note
+        updateFuelNote(state);
+      });
+  }
+
   function handleFuelType(value) {
     state = validate({ ...state, fuelType: value });
     saveState(state);
@@ -1668,8 +1718,8 @@ function init() {
       recalculate(state);
       return;
     }
-    if (fuelPriceCache) {
-      const price = fuelPriceCache[value];
+    const price = fuelPriceCache ? fuelPriceCache[value] : undefined;
+    if (Number.isFinite(price)) {
       state = validate({
         ...state,
         fuelPrice: price,
@@ -1691,6 +1741,9 @@ function init() {
       );
       updateFuelNote(state);
       recalculate(state);
+    }
+    if (fuelCacheIsStale(fuelPriceCache)) {
+      triggerFuelFetch();
     }
   }
 
@@ -1919,23 +1972,6 @@ function init() {
     }
   });
 
-  fuelPriceCache = loadFuelCache();
-  if (fuelPriceCache && state.fuelType !== "manual") {
-    handleFuelType(state.fuelType);
-  }
-  if (fuelCacheIsStale(fuelPriceCache) && state.fuelType !== "manual") {
-    fetchFuelPrices()
-      .then(() => {
-        if (state.fuelType !== "manual") {
-          handleFuelType(state.fuelType);
-        }
-      })
-      .catch(() => {
-        if (state.fuelType !== "manual") {
-          handleFuelType(state.fuelType);
-        }
-      });
-  }
 }
 
 if (typeof document !== "undefined") {

@@ -287,11 +287,11 @@ await page.waitForFunction(() => {
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
-    await expect(page.locator('#fuel-price')).toBeEnabled();
-    await page.locator('#fuel-type .seg-btn[data-value="gasoline"]').click();
     await expect(page.locator('#fuel-price')).toBeDisabled();
     await page.locator('#fuel-type .seg-btn[data-value="manual"]').click();
     await expect(page.locator('#fuel-price')).toBeEnabled();
+    await page.locator('#fuel-type .seg-btn[data-value="gasoline"]').click();
+    await expect(page.locator('#fuel-price')).toBeDisabled();
   });
 
   test('desktop layout: inputs left, outputs right', async ({ page }) => {
@@ -460,6 +460,7 @@ test('currency stays Ft across reload', async ({ page }) => {
   });
 
   test('defaults note visible on fresh load, hidden after change', async ({ page }) => {
+    await page.route('**/openvan.camp/**', (route) => route.abort());
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
@@ -493,11 +494,23 @@ test('trip reference header shows 130 km/h', async ({ page }) => {
     await expect(page.locator('#fuel-price-note')).toContainText(/alapértelmezett|default/);
   });
 
+  test('starts in gasoline mode with disabled price input', async ({ page }) => {
+    await page.route('**/openvan.camp/**', (route) => route.abort());
+    await page.goto('/');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await expect(
+      page.locator('#fuel-type .seg-btn[data-value="gasoline"]'),
+    ).toHaveClass(/active/);
+    await expect(page.locator('#fuel-price')).toBeDisabled();
+    await expect(page.locator('#fuel-price')).toHaveValue('610');
+  });
+
   test('fuel price slider visible only in manual mode', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
-    await expect(page.locator('#fuel-price-slider')).toBeVisible();
+    await expect(page.locator('#fuel-price-slider')).toBeHidden();
     await page.locator('#fuel-type .seg-btn[data-value="gasoline"]').click();
     await expect(page.locator('#fuel-price-slider')).toBeHidden();
     await page.locator('#fuel-type .seg-btn[data-value="manual"]').click();
