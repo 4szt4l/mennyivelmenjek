@@ -15,6 +15,7 @@
   --accent-contrast: #ffffff;
   --border: #e2e8f0;
   --shadow: 0 4px 6px -1px rgb(15 23 42 / 0.1), 0 2px 4px -2px rgb(15 23 42 / 0.1);
+  --card-header-gap: 1.25rem;
 }
 
 [data-theme="dark"] {
@@ -444,7 +445,11 @@ section,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  margin-bottom: var(--card-header-gap);
+}
+
+.card > .card-title {
+  margin-bottom: var(--card-header-gap);
 }
 
 [role="tabpanel"] {

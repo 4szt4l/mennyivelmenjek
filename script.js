@@ -677,8 +677,8 @@ const I18N = {
     measurementsHint:
       "Adj meg valós méréseket különböző sebességeknél és illesztünk rá egy görbét. Ha van mérés, a cw-t nem használjuk.",
     addMeasurement: "+ Mérés hozzáadása",
-    time: "Idő",
-    salary: "Havi nettó fizetés",
+    time: "Időérték",
+    salary: "Fizetés",
     salaryUnitSuffix: "hó nettó",
     addPassenger: "+ Utas hozzáadása",
     workHours: "Munkaórák havonta",
@@ -756,8 +756,8 @@ const I18N = {
     measurementsHint:
       "Enter real measurements at different speeds — the curve is fitted from these (min. 3). When measurements exist, cw is ignored.",
     addMeasurement: "+ Add measurement",
-    time: "Time",
-    salary: "Monthly net salary",
+    time: "Value of time",
+    salary: "Salary",
     salaryUnitSuffix: "month net",
     addPassenger: "+ Add passenger",
     workHours: "Work hours per month",
