@@ -1508,20 +1508,23 @@ function init() {
 
   applyLanguage("hu");
 
-  fuelPriceCache = loadFuelCache();
-  const cachedPrice =
-    state.fuelType !== "manual" ? fuelPriceCache?.[state.fuelType] : undefined;
-  if (Number.isFinite(cachedPrice)) {
-    state = validate({
-      ...state,
-      fuelPrice: cachedPrice,
-      fuelPriceUpdated: fuelPriceCache.fetchedAt,
-    });
-  }
-  if (state.fuelType !== "manual" && fuelCacheIsStale(fuelPriceCache)) {
-    triggerFuelFetch();
+  function syncFuelState() {
+    fuelPriceCache = loadFuelCache();
+    const cachedPrice =
+      state.fuelType !== "manual" ? fuelPriceCache?.[state.fuelType] : undefined;
+    if (Number.isFinite(cachedPrice)) {
+      state = validate({
+        ...state,
+        fuelPrice: cachedPrice,
+        fuelPriceUpdated: fuelPriceCache.fetchedAt,
+      });
+    }
+    if (state.fuelType !== "manual" && fuelCacheIsStale(fuelPriceCache)) {
+      triggerFuelFetch();
+    }
   }
 
+  syncFuelState();
   populateFields(state);
   recalculate(state);
 
@@ -1877,6 +1880,7 @@ function init() {
 
   document.getElementById("reset")?.addEventListener("click", () => {
     state = resetState();
+    syncFuelState();
     populateFields(state);
     recalculate(state);
   });
